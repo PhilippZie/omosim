@@ -67,4 +67,9 @@ class CRSTransformer (
             .createDefiningConversion(properties, TransverseMercator.Provider(), parameters)
         return factories.crsFactory.createProjectedCRS(properties, geoCRS, conversion, cartCS)
     }
+
+    private fun getUTMZoneName(lon: Double, lat: Double): String {
+        // tODO
+        return "Not Implemented"
+    }
 }

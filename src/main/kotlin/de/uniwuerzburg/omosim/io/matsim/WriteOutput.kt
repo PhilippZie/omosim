@@ -22,6 +22,7 @@ import kotlin.io.path.outputStream
 
 fun writeSingleDay(
     output: List<OutputEntry>, file: Path, day: Int, outputCRS: String = "EPSG:4326",
+    // todo: outputcrs nullable, wenn null, dann best utm zone auswählen
     runParams: Map<String, String>
 ) : Boolean {
     // CRS transformer
