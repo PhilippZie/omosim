@@ -3,8 +3,7 @@ package de.uniwuerzburg.omosim.io.matsim
 import de.uniwuerzburg.omosim.io.json.OutputActivity
 import de.uniwuerzburg.omosim.io.json.OutputEntry
 import de.uniwuerzburg.omosim.io.json.OutputTrip
-import de.uniwuerzburg.omosim.utils.CRSTransformer
-import de.uniwuerzburg.omosim.utils.getUTMZoneName
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem
 import org.geotools.geometry.jts.JTS
 import org.geotools.referencing.CRS
 import org.locationtech.jts.geom.Coordinate
@@ -27,19 +26,18 @@ fun writeSingleDay(
     runParams: Map<String, String>
 ) : Boolean {
 
-    var determinedOutputCRS: String
-
-    if(outputCRS.isNullOrBlank()) {
-        val lon: Double = output[0].homeLon
-        val lat: Double = output[0].homeLat
-        determinedOutputCRS = getUTMZoneName(lon, lat)
-    } else {
-        determinedOutputCRS = outputCRS
-    }
-
     // CRS transformer
     val latlonCRS = CRS.decode("EPSG:4326")
-    val targetCRS = CRS.decode(determinedOutputCRS)
+    var targetCRS: CoordinateReferenceSystem
+
+    if(outputCRS.isNullOrBlank()) {
+        var lat: Double = output[0].homeLon
+        var lon: Double = output[0].homeLat
+        targetCRS = CRS.decode("Auto:42001,$lon,$lat")
+    } else {
+        targetCRS = CRS.decode(outputCRS)
+    }
+
     val crsTransformer = CRS.findMathTransform(latlonCRS, targetCRS)
     val geometryFactory = GeometryFactory()
 

@@ -68,33 +68,3 @@ class CRSTransformer (
         return factories.crsFactory.createProjectedCRS(properties, geoCRS, conversion, cartCS)
     }
 }
-
-/**
- * Transforms latitude and longitude coordinates to the UTM Zone Name
- * https://de.wikipedia.org/wiki/UTM-Koordinatensystem#/media/Datei:UTM-Zone.svg
- * Does not apply the letter, but the epsg base number + longitude zone number
- * Example: Germany (9.X, 49.X) -> method returns "EPSG:32632"
- *
- * @param lon longitude coordinate
- * @param lat latitude coordinate
- */
-fun getUTMZoneName(lon: Double, lat: Double): String {
-
-    // Calculate longitudinal zone number
-    var zoneNumber = ((lon + 180.0) / 6.0).toInt() + 1
-    if (zoneNumber == 61) zoneNumber = 60 // 180.0 longitude edge case
-
-    // Special UTM Exceptions for Norway and Svalbard
-    if (lat in 56.0..64.0 && lon >= 3.0 && lon < 12.0) {
-        zoneNumber = 32
-    } else if (lat in 72.0..84.0) {
-        if (lon >= 0.0 && lon < 9.0) zoneNumber = 31
-        else if (lon >= 9.0 && lon < 21.0) zoneNumber = 33
-        else if (lon >= 21.0 && lon < 33.0) zoneNumber = 35
-        else if (lon >= 33.0 && lon < 42.0) zoneNumber = 37
-    }
-
-    val epsgBase = if (lat >= 0.0) 32600 else 32700
-
-    return "EPSG:${epsgBase + zoneNumber}"
-}
