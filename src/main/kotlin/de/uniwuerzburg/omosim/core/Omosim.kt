@@ -295,7 +295,7 @@ class Omosim (
 
             // Add census data if available
             if (censusFile != null) {
-                buildings = readCensus(buildings, transformer, geometryFactory, censusFile, popConfig, mainRng)
+                buildings = readCensus(buildings, transformer, geometryFactory, censusFile, mainRng)
             }
 
             // Convert to GeoJSON
@@ -320,7 +320,8 @@ class Omosim (
                         number_fast_food = it.nFastFood,
                         number_kindergarten = it.nKinderGarten,
                         number_tourism = it.nTourism,
-                        levels = it.levels
+                        levels = it.levels,
+                        demographics = it.demographics
                     )
                     GeoJsonFeature(geometry = geometry, properties = properties)
                 }
@@ -333,7 +334,7 @@ class Omosim (
             }
             collection
         }
-        return Building.fromGeoJson(collection, geometryFactory, transformer, locChoiceWeightFuns)
+        return Building.fromGeoJson(collection, geometryFactory, transformer, locChoiceWeightFuns, popConfig)
     }
 
     /**

@@ -1,12 +1,12 @@
 package de.uniwuerzburg.omosim.io
 
+import de.uniwuerzburg.omosim.core.models.LocalDemographics
 import de.uniwuerzburg.omosim.core.models.PopulationConfig
 import de.uniwuerzburg.omosim.io.geojson.GeoJsonFeatureCollection
 import de.uniwuerzburg.omosim.io.geojson.property.CensusProperties
 import de.uniwuerzburg.omosim.io.json.readJsonStream
 import de.uniwuerzburg.omosim.io.osm.BuildingData
 import de.uniwuerzburg.omosim.utils.CRSTransformer
-import org.apache.commons.math3.genetics.Population
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.index.hprtree.HPRtree
 import java.nio.file.Path
@@ -24,8 +24,10 @@ import kotlin.math.min
  * @return List of buildings with all necessary features
  */
 fun readCensus(
-    osmBuildings: List<BuildingData>, transformer: CRSTransformer,
-    geometryFactory: GeometryFactory, censusFile: Path, popConfig: PopulationConfig,
+    osmBuildings: List<BuildingData>,
+    transformer: CRSTransformer,
+    geometryFactory: GeometryFactory,
+    censusFile: Path,
     rng: Random
 ) : List<BuildingData> {
 
@@ -38,16 +40,26 @@ fun readCensus(
 
     val censusData: GeoJsonFeatureCollection<CensusProperties> = readJsonStream(censusFile)
 
-    for (censusEntree in censusData.features) {
+    for ((i, censusEntree) in censusData.features.withIndex()) {
         var population = censusEntree.properties.population
         if (population <= 0) { continue }
 
-        // Save the local strata as a Map (Id -> share) and store it in the building
-        val zoneShares: Map<Int, Double> = popConfig.strata.associate {
-            // The stratum id is an Integer but in the census file it needs to be passed as a string
-                stratum -> val share = censusEntree.properties.strata[stratum.id.toString()]
-            ?: error("Census entry has no value for stratum '${stratum.id}'")
-            stratum.id to share
+        // Store local stratum in the building
+        var localDemographics: LocalDemographics? = null
+        if(censusEntree.properties.strata != null) {
+            val names = censusEntree.properties.strata.keys.toList()
+            val shares = censusEntree.properties.strata.values.toList()
+            if (names.size != shares.size) {
+                logger.warn("Census entry $i contains invalid demographic distribution." +
+                        "Strata names and strata shares are not the same size!" +
+                        "Falling back to global demographics in this region.")
+            } else if (names.isEmpty()) {
+                logger.warn("Census entry $i contains invalid demographic distribution." +
+                        "No strata is supplied." +
+                        "Falling back to global demographics in this region.")
+            } else {
+                localDemographics = LocalDemographics(names, shares)
+            }
         }
 
         val censusZone = transformer.toModelCRS(censusEntree.geometry.toJTS(geometryFactory) )
@@ -61,7 +73,7 @@ fun readCensus(
         for (building in intersectingBuildings) {
             val populationBuilding = min(population, populationPerBuilding)
             building.population = (building.population ?: 0.0) + populationBuilding
-            building.localStrata = zoneShares
+            building.demographics = localDemographics
             population -= populationBuilding
             if (population <= 0) {
                 break
